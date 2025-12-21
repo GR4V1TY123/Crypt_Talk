@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Agbalumo&family=Bangers&family=Permanent+Marker&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -16,6 +17,7 @@
   --font-marker: "Permanent Marker", cursive;
   --font-bangers: "Bangers", system-ui;
   --font-Agbalumo: "Agbalumo", system-ui;
+  --font-inter: "Inter", sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
