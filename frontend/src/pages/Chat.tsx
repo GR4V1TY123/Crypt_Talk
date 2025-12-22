@@ -17,20 +17,22 @@ export default function Chat() {
   const location = useLocation()
   const { username, topic } = location.state || {}
 
-  const [message, setMessage] = useState([]);
-  const [input, setInput] = useState("")
-  const [waiting, setWaiting] = useState(true);
-  const [room, setRoom] = useState({
+  const defaultRoom = {
     roomId: "",
     topic: "",
     users: [],
     created_at: ""
-  });
+  }
+  const [message, setMessage] = useState([]);
+  const [input, setInput] = useState("")
+  const [waiting, setWaiting] = useState(true);
+  const [room, setRoom] = useState(defaultRoom);
+  const [endMsg, setEndMsg] = useState("")
 
   useEffect(() => {
     socket.connect();
     console.log(topic);
-    
+
     socket.emit('join queue', { topic, username })
 
     socket.on('waiting', ({ topic }) => {
@@ -50,6 +52,10 @@ export default function Chat() {
       setWaiting(false);
     })
 
+    socket.on('room ended', ({ reason, by }) => {
+      setEndMsg(`${by} has disconnected. Room ended.`)
+    })
+
     const handleMessage = (newMsg: any) => {
       setMessage((prev: any) => [...prev, newMsg]);
     };
@@ -60,15 +66,23 @@ export default function Chat() {
       socket.off("message", handleMessage);
       socket.off('waiting')
       socket.off('room joined')
+      socket.off('room ended')
       socket.disconnect();
     };
   }, [])
 
   const sendMessageHandler = (e) => {
     e.preventDefault();
-    if(input.length === 0) return;
+    if (input.length === 0) return;
     socket.emit('message', input)
     setInput("")
+  }
+
+  const findNewRoom = () => {
+    socket.emit('join queue', { topic, username })
+    setMessage([])
+    setRoom(defaultRoom)
+    setEndMsg("")
   }
 
   if (waiting) {
@@ -77,20 +91,21 @@ export default function Chat() {
     </div>
   }
 
+  const otherUser = room?.users?.find((u: any) => u.name !== username)?.name || "Anonymous";
   return (
     <div>
-      <div className="min-h-screen md:bg-[url('/ty_bg2.png')] bg-cover bg-center h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen md:bg-[url('/ty_bg2_bw.png')] bg-cover bg-center h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-3xl text-slate-200 bg-darkbg h-[600px] border-black flex flex-col shadow-lg rounded-2xl">
 
           {/* Header */}
           <div className=" px-6">
-            <h2 className="text-base font-semibold">{topic} Discussion with <span className='font-bold underline underline-offset-4'>{room.users[0].name === username ? room.users[1].name : room.users[0].name}</span></h2>
+            <h2 className="text-base font-semibold">{topic} Discussion with <span className='font-bold underline underline-offset-4'>{otherUser}</span></h2>
             <Accordion type="single" collapsible>
               <AccordionItem value="item-1">
                 <AccordionTrigger>Room Details</AccordionTrigger>
                 <AccordionContent>
                   <p>Room Id: {room.roomId}</p>
-                  <p>Users: {room.users[0].name}, {room.users[1].name}</p>
+                  <p>Users: {username}, {otherUser}</p>
                   <p>Created at: {room.created_at}</p>
                 </AccordionContent>
               </AccordionItem>
@@ -129,9 +144,20 @@ export default function Chat() {
                     </div>
                   </div>
                 </div>
-
               ))
             }
+            {endMsg && (
+              <div className="flex justify-center my-6">
+                <div className="px-4 py-2 md:text-sm text-xs text-white bg-red-500 rounded-full shadow-sm">
+                  {endMsg}
+                  <a onClick={findNewRoom} className='hover:cursor-pointer underline inline mx-2 text-white'>
+                    Find new Room?
+                  </a>
+                </div>
+
+              </div>)
+            }
+
           </CardContent>
 
           {/* Input */}

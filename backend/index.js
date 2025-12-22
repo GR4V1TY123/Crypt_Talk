@@ -24,7 +24,6 @@ const queueByTopic = { //topic
   COLLABORATION: new Set(),
   PROJECT: new Set()
 };
-console.log(queueByTopic);
 
 const rooms = new Map(); //room->roomdata
 const socketToRoom = new Map(); //socket->room
@@ -123,8 +122,6 @@ io.on("connection", (socket) => {
       msg,
       created_at: Date.now()
     }
-
-    console.log(newMsg);
 
     const room = rooms.get(roomId); // get the roomId of sender by using the roomId -> room Object map
 

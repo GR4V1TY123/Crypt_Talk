@@ -25,11 +25,11 @@ export default function Home() {
     activeUsers: 0,
     totalRooms: 0,
     queue: {
-        DSA: 0,
-        SYSTEM_DESIGN: 0,
-        GENERAL: 0,
-        COLLABORATION: 0,
-        PROJECT: 0
+      DSA: 0,
+      SYSTEM_DESIGN: 0,
+      GENERAL: 0,
+      COLLABORATION: 0,
+      PROJECT: 0
     }
   })
 
@@ -39,8 +39,8 @@ export default function Home() {
         const response = await fetch(`http://localhost:3000/api/stats`);
         const data = await response.json();
         if (response.ok) setStats(data)
-          console.log(data);
-          
+        console.log(data);
+
       } catch (error) {
         console.log(error);
       }
@@ -91,10 +91,15 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen md:bg-[url('/ty_bg2.png')] bg-cover bg-center h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen md:bg-[url('/ty_bg2_bw.png')] bg-cover bg-center h-screen flex items-center justify-center px-4">
       {stats && (
-        <div className="text-sm bg-white border text-gray-600 space-y-1">
-          <div>🌐 Online: {stats.activeUsers}</div>
+        <div className="fixed top-4 right-4 z-50">
+          <div className="bg-white border rounded-xl px-4 py-2 shadow text-sm text-gray-600 space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span>Online: {stats.activeUsers}</span>
+            </div>
+          </div>
         </div>
       )}
       <Card className="w-full max-w-lg border-4 border-black shadow-lg shadow-verydark">
@@ -139,7 +144,16 @@ export default function Home() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="px-1">{t.name} <Dot fontSize={30} className="text-green-700 inline"/>{stats.queue[t.val]}</span>
+                          <div className="flex items-center gap-2 cursor-pointer">
+                            <span
+                              className={`h-2 w-2 rounded-full ${stats.queue[t.val] > 0 ? "bg-green-500 animate-pulse" : "bg-gray-300"
+                                }`}
+                            />
+
+                            <span className="text-sm">
+                              {t.name} ({stats.queue[t.val] ?? 0})
+                            </span>
+                          </div>
                         </TooltipTrigger>
                         <TooltipContent side="top">
                           <p className="max-w-xs text-sm">{t.desc}</p>
