@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { socket } from '@/socket';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,10 +11,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { LogOut, RefreshCcw } from 'lucide-react';
+import LoadingPage from './LoadingPage';
 
 export default function Chat() {
 
   const location = useLocation()
+  const navigate = useNavigate()
   const { username, topic } = location.state || {}
 
   const defaultRoom = {
@@ -79,73 +82,121 @@ export default function Chat() {
   }
 
   const findNewRoom = () => {
-    socket.emit('join queue', { topic, username })
+    setWaiting(true)
     setMessage([])
     setRoom(defaultRoom)
     setEndMsg("")
+
+    socket.disconnect();
+    socket.connect()
+    socket.emit('join queue', { topic, username })
   }
 
   if (waiting) {
-    return <div className="h-screen flex items-center justify-center text-lg">
-      Waiting for a match…
-    </div>
+    return <LoadingPage />
   }
 
   const otherUser = room?.users?.find((u: any) => u.name !== username)?.name || "Anonymous";
   return (
     <div>
-      <div className="min-h-screen md:bg-[url('/ty_bg2_bw.png')] bg-cover bg-center h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-3xl text-slate-200 bg-darkbg h-[600px] border-black flex flex-col shadow-lg rounded-2xl">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-3xl text-slate-200 bg-darkbg h-[650px] border-black flex flex-col shadow-lg shadow-button rounded-2xl">
 
           {/* Header */}
           <div className=" px-6">
-            <h2 className="text-base font-semibold">{topic} Discussion with <span className='font-bold underline underline-offset-4'>{otherUser}</span></h2>
-            <Accordion type="single" collapsible>
-              <AccordionItem value="item-1">
-                <AccordionTrigger>Room Details</AccordionTrigger>
-                <AccordionContent>
-                  <p>Room Id: {room.roomId}</p>
-                  <p>Users: {username}, {otherUser}</p>
-                  <p>Created at: {room.created_at}</p>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <div className="flex items-center justify-between gap-4">
+              {/* Title */}
+              <h2 className="text-base font-semibold text-white">
+                {topic} Discussion with{" "}
+                <span className="font-bold underline underline-offset-4">
+                  {otherUser}
+                </span>
+              </h2>
+
+              {/* Actions */}
+              <div className="flex items-center gap-4">
+                <button onClick={() => navigate('/')} className="p-2 rounded-full hover:cursor-pointer bg-red-50 transition">
+                  <LogOut className="h-5 w-5 text-red-500" />
+                </button>
+
+                <button onClick={findNewRoom} className="p-2 rounded-full hover:cursor-pointer bg-blue-50 transition">
+                  <RefreshCcw className="h-5 w-5 text-blue-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Room Info */}
+            <div className="mt-3">
+              <Accordion type="single" collapsible>
+                <AccordionItem value="item-1">
+                  <AccordionTrigger className="text-sm text-white">
+                    Room Details
+                  </AccordionTrigger>
+
+                  <AccordionContent>
+                    <div className="mt-2 space-y-1 text-sm text-white">
+                      <p>
+                        <span className="font-medium">Room ID:</span> {room.roomId}
+                      </p>
+                      <p>
+                        <span className="font-medium">Users:</span> {username}, {otherUser}
+                      </p>
+                      <p>
+                        <span className="font-medium">Created:</span>{" "}
+                        {new Date(room.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
           </div>
 
           {/* Messages */}
-          <CardContent className="flex-1 bg-[url('/chat_bg.jpg')] bg-cover bg-center h-screen bg-orange-100 font-inter overflow-y-auto p-6 space-y-4">
+          <CardContent className="flex-1 bg-[url('/chat_bg.jpg')] bg-cover bg-center h-screen bg-orange-100 font-inter overflow-y-auto p-6 space-y-3">
             {
-              message.length > 0 && message.map((msg, i) => (
-                <div
-                  className={`flex ${msg.user === username ? "justify-end" : "justify-start"
-                    }`}
-                >
-                  <div
-                    className={`max-w-[70%] px-4 py-2 rounded-2xl md:text-base text-sm shadow
-                        ${msg.user === username
-                        ? "bg-button text-white rounded-br-md"
-                        : "bg-verydark text-white rounded-bl-md"
-                      }`}
-                  >
-                    {/* Message text */}
-                    <p className="whitespace-pre-wrap break-words">
-                      {msg.msg}
-                    </p>
+              message.length > 0 && message.map((msg, i) => {
+                const isMe = msg.user === username;
 
-                    {/* Timestamp */}
+                return (
+                  <div
+                    key={i}
+                    className={`flex flex-col ${isMe ? "items-end" : "items-start"} mb-2`}
+                  >
+                    {/* Sender name (only for other user) */}
+                    {!isMe && (
+                      <span className="text-[11px] text-black mb-1 ml-1">
+                        {msg.user}
+                      </span>
+                    )}
+
                     <div
-                      className={`mt-1 text-[10px] opacity-70 ${msg.user === username ? "text-right" : "text-left"
+                      className={`max-w-[70%] px-4 py-1 rounded-2xl md:text-base text-sm shadow
+            ${isMe
+                          ? "bg-button text-white rounded-br-md"
+                          : "bg-verydark text-white rounded-bl-md"
                         }`}
                     >
-                      {new Date(msg.created_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {/* Message text */}
+                      <p className="whitespace-pre-wrap wrap-break-words">
+                        {msg.msg}
+                      </p>
+
+                      {/* Timestamp */}
+                      <div
+                        className={`pb-1 text-[9px] opacity-70 ${isMe ? "text-right" : "text-left"}`}
+                      >
+                        {new Date(msg.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             }
+
             {endMsg && (
               <div className="flex justify-center my-6">
                 <div className="px-4 py-2 md:text-sm text-xs text-white bg-red-500 rounded-full shadow-sm">

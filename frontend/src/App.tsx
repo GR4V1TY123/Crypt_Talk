@@ -6,7 +6,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className='bg-brownbg font-inter'>
+      <div className="bg-brownbg font-inter  md:bg-[url('/ty_bg2_bw.png')] bg-cover bg-center h-screen">
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/chat' element={<Chat />} />
