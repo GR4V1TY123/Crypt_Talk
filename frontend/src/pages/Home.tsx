@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
-import { Dot } from 'lucide-react';
+
 
 export default function Home() {
 
@@ -36,7 +36,7 @@ export default function Home() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/stats`);
+        const response = await fetch(`https://techyap-production.up.railway.app/api/stats`);
         const data = await response.json();
         if (response.ok) setStats(data)
         console.log(data);
@@ -146,12 +146,13 @@ export default function Home() {
                         <TooltipTrigger asChild>
                           <div className="flex items-center gap-2 cursor-pointer">
                             <span
-                              className={`h-2 w-2 rounded-full ${stats.queue[t.val] > 0 ? "bg-green-500 animate-pulse" : "bg-gray-300"
+                              className={`h-2 w-2 rounded-full ${stats.queue[t.val as keyof typeof stats.queue] > 0 ? "bg-green-500 animate-pulse" : "bg-gray-300"
                                 }`}
                             />
 
                             <span className="text-sm">
-                              {t.name} ({stats.queue[t.val] ?? 0})
+                              {/* Temp TS fix */}
+                              {t.name} ({stats.queue[t.val as keyof typeof stats.queue] ?? 0}) 
                             </span>
                           </div>
                         </TooltipTrigger>

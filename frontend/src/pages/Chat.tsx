@@ -14,22 +14,43 @@ import {
 import { LogOut, RefreshCcw } from 'lucide-react';
 import LoadingPage from './LoadingPage';
 
+interface Message {
+  id?: string;
+  user: string;
+  name?: string;
+  msg: string;
+  created_at: string | Date | number;
+}
+
+type RoomUser = {
+  id: string;
+  name: string;
+};
+
+type Room = {
+  roomId: string;
+  topic: string;
+  users: RoomUser[];
+  created_at?: string;
+};
+
+
 export default function Chat() {
 
   const location = useLocation()
   const navigate = useNavigate()
   const { username, topic } = location.state || {}
 
-  const defaultRoom = {
+  const defaultRoom: Room = {
     roomId: "",
     topic: "",
     users: [],
-    created_at: ""
+    created_at: undefined
   }
-  const [message, setMessage] = useState([]);
+  const [message, setMessage] = useState<Message[]>([]);
   const [input, setInput] = useState("")
   const [waiting, setWaiting] = useState(true);
-  const [room, setRoom] = useState(defaultRoom);
+  const [room, setRoom] = useState<Room | null>(defaultRoom);
   const [endMsg, setEndMsg] = useState("")
 
   useEffect(() => {
@@ -38,7 +59,7 @@ export default function Chat() {
 
     socket.emit('join queue', { topic, username })
 
-    socket.on('waiting', ({ topic }) => {
+    socket.on('waiting', () => {
       console.log("start wait");
 
       setWaiting(true)
@@ -55,7 +76,7 @@ export default function Chat() {
       setWaiting(false);
     })
 
-    socket.on('room ended', ({ reason, by }) => {
+    socket.on('room ended', ({ by }) => {
       setEndMsg(`${by} has disconnected. Room ended.`)
     })
 
@@ -74,7 +95,7 @@ export default function Chat() {
     };
   }, [])
 
-  const sendMessageHandler = (e) => {
+  const sendMessageHandler = (e: any) => {
     e.preventDefault();
     if (input.length === 0) return;
     socket.emit('message', input)
@@ -97,10 +118,11 @@ export default function Chat() {
   }
 
   const otherUser = room?.users?.find((u: any) => u.name !== username)?.name || "Anonymous";
+
   return (
     <div>
       <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-3xl text-slate-200 bg-darkbg h-[650px] border-black flex flex-col shadow-lg shadow-button rounded-2xl">
+        <Card className="w-full max-w-3xl text-slate-200 bg-darkbg h-162.5 border-black flex flex-col shadow-lg shadow-button rounded-2xl">
 
           {/* Header */}
           <div className=" px-6">
@@ -136,14 +158,16 @@ export default function Chat() {
                   <AccordionContent>
                     <div className="mt-2 space-y-1 text-sm text-white">
                       <p>
-                        <span className="font-medium">Room ID:</span> {room.roomId}
+                        <span className="font-medium">Room ID:</span> {room?.roomId}
                       </p>
                       <p>
                         <span className="font-medium">Users:</span> {username}, {otherUser}
                       </p>
                       <p>
                         <span className="font-medium">Created:</span>{" "}
-                        {new Date(room.created_at).toLocaleString()}
+                        {room?.created_at
+                          ? new Date(room.created_at).toLocaleString()
+                          : "Unknown"}
                       </p>
                     </div>
                   </AccordionContent>
