@@ -3,16 +3,22 @@ import { createServer } from 'node:http';
 import { Server } from "socket.io";
 import cors from "cors"
 import { v4 as uuidv4 } from 'uuid';
+import puppeteer from "puppeteer";
+import { html } from "./report_format.js";
 
 const app = express();
-app.use(cors())
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}))
 app.use(express.json())
 
 const server = createServer(app);
 const io = new Server(server, {
   connectionStateRecovery: {},
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173"
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true
   }
 });
 
@@ -170,6 +176,36 @@ app.get("/api/stats", (req, res) => {
     queue: stats
   });
 });
+
+// api to generate the report
+app.post("/api/report", async (req, res) => {
+  console.log(req.body);
+
+  const { messages, username, room } = req.body;
+  if (!messages || !username || !room) {
+    return res.status(408).json({
+      message: "Missing fields"
+    })
+  }
+  if (messages.length === 0) {
+    return res.status(408).json({
+      message: "No messages to parse"
+    })
+  }
+  try {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    const htmlString = html(username);
+    await page.setContent(htmlString, { waitUntil: 'networkidle0' });
+    const pdf = await page.pdf({ format: 'A4' });
+    await browser.close();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="your_document.pdf"');
+    return res.status(200).send(pdf);
+  } catch (error) {
+    console.log(error);
+  }
+})
 
 // Start http + socket, not express
 server.listen(3000, () => {

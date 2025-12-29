@@ -13,14 +13,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
+import { useCookies } from 'react-cookie';
 
 
 export default function Home() {
 
   const navigate = useNavigate();
+  const [userCookie, setUserCookie] = useCookies(['username']);
+  const [topicCookie, setTopicCookie] = useCookies(['topic']);
 
   const [username, setUsername] = useState(`Anonymous_${Math.round(Math.random() * 1000000)}`);
   const [topic, setTopic] = useState("GENERAL");
+
+
   const [stats, setStats] = useState({
     activeUsers: 0,
     totalRooms: 0,
@@ -34,9 +39,15 @@ export default function Home() {
   })
 
   useEffect(() => {
+    if (userCookie.username) {
+      setUsername(userCookie.username)
+    }
+    if(topicCookie.topic){
+      setTopic(topicCookie.topic)
+    }
     const fetchStats = async () => {
       try {
-        const response = await fetch(`https://techyap-production.up.railway.app/api/stats`);
+        const response = await fetch(`http://localhost:3000/api/stats`);
         const data = await response.json();
         if (response.ok) setStats(data)
         console.log(data);
@@ -82,6 +93,8 @@ export default function Home() {
   const handleSubmit = (e: any) => {
     e.preventDefault();
     console.log(topic);
+    setUserCookie('username', username, { path: '/', maxAge: 3600 });
+    setTopicCookie('topic', topic, { path: '/', maxAge: 3600 });
 
     navigate(`chat/`, {
       state: {
@@ -152,7 +165,7 @@ export default function Home() {
 
                             <span className="text-sm">
                               {/* Temp TS fix */}
-                              {t.name} ({stats.queue[t.val as keyof typeof stats.queue] ?? 0}) 
+                              {t.name} ({stats.queue[t.val as keyof typeof stats.queue] ?? 0})
                             </span>
                           </div>
                         </TooltipTrigger>

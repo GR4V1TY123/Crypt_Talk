@@ -11,8 +11,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { LogOut, RefreshCcw } from 'lucide-react';
+import { Download, LogOut, RefreshCcw } from 'lucide-react';
 import LoadingPage from './LoadingPage';
+import { useCookies } from 'react-cookie';
+import useDownload from '@/hooks/useDownload';
 
 interface Message {
   id?: string;
@@ -37,9 +39,20 @@ type Room = {
 
 export default function Chat() {
 
-  const location = useLocation()
   const navigate = useNavigate()
-  const { username, topic } = location.state || {}
+
+  const [cookies, setCookie] = useCookies(["username", "topic"]);
+
+  const username = cookies.username;
+  const topic = cookies.topic;
+
+  if (!username || !topic) {
+    navigate('/')
+  }
+
+  if (!username || !topic) {
+    navigate('/');
+  }
 
   const defaultRoom: Room = {
     roomId: "",
@@ -47,7 +60,7 @@ export default function Chat() {
     users: [],
     created_at: undefined
   }
-  const [message, setMessage] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("")
   const [waiting, setWaiting] = useState(true);
   const [room, setRoom] = useState<Room | null>(defaultRoom);
@@ -81,7 +94,7 @@ export default function Chat() {
     })
 
     const handleMessage = (newMsg: any) => {
-      setMessage((prev: any) => [...prev, newMsg]);
+      setMessages((prev: any) => [...prev, newMsg]);
     };
 
     socket.on('message', handleMessage)
@@ -104,13 +117,17 @@ export default function Chat() {
 
   const findNewRoom = () => {
     setWaiting(true)
-    setMessage([])
+    setMessages([])
     setRoom(defaultRoom)
     setEndMsg("")
 
     socket.disconnect();
     socket.connect()
     socket.emit('join queue', { topic, username })
+  }
+
+  const handleDownload = async () => {
+    useDownload({messages, username, room})
   }
 
   if (waiting) {
@@ -137,6 +154,14 @@ export default function Chat() {
 
               {/* Actions */}
               <div className="flex items-center gap-4">
+
+                <button
+                  onClick={handleDownload}
+                  className="p-2 rounded-full bg-white hover:cursor-pointer hover:bg-green-50 transition"
+                >
+                  <Download className="h-5 w-5 text-green-700" />
+                </button>
+
                 <button onClick={() => navigate('/')} className="p-2 rounded-full hover:cursor-pointer bg-red-50 transition">
                   <LogOut className="h-5 w-5 text-red-500" />
                 </button>
@@ -179,7 +204,7 @@ export default function Chat() {
           {/* Messages */}
           <CardContent className="flex-1 bg-[url('/chat_bg.jpg')] bg-cover bg-center h-screen bg-orange-100 font-inter overflow-y-auto p-6 space-y-3">
             {
-              message.length > 0 && message.map((msg, i) => {
+              messages.length > 0 && messages.map((msg, i) => {
                 const isMe = msg.user === username;
 
                 return (
