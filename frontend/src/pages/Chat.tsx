@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { socket } from '@/socket';
 import { Card } from '@/components/ui/card';
@@ -15,6 +15,9 @@ import { Download, LogOut, RefreshCcw } from 'lucide-react';
 import LoadingPage from './LoadingPage';
 import { useCookies } from 'react-cookie';
 import useDownload from '@/hooks/useDownload';
+import Editor from '@/components/Editor';
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 
 interface Message {
   id?: string;
@@ -27,32 +30,30 @@ interface Message {
 type RoomUser = {
   id: string;
   name: string;
-};
+} | undefined;
 
 type Room = {
   roomId: string;
   topic: string;
   users: RoomUser[];
   created_at?: string;
+  ideAccess?: string;
+  ideValue?: string;
+  requester?: string | null
 };
 
 
 export default function Chat() {
 
+
+  const lastSentRef = useRef<string>("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate()
 
   const [cookies, setCookie] = useCookies(["username", "topic"]);
 
   const username = cookies.username;
   const topic = cookies.topic;
-
-  if (!username || !topic) {
-    navigate('/')
-  }
-
-  if (!username || !topic) {
-    navigate('/');
-  }
 
   const defaultRoom: Room = {
     roomId: "",
@@ -65,6 +66,16 @@ export default function Chat() {
   const [waiting, setWaiting] = useState(true);
   const [room, setRoom] = useState<Room | null>(defaultRoom);
   const [endMsg, setEndMsg] = useState("")
+  const [code, setCode] = useState<string>("// write code here")
+
+  const otherUser: RoomUser = room?.users?.find((u: RoomUser) => u?.name !== username);
+  const currentUser: RoomUser = room?.users?.find((u: RoomUser) => u?.name === username);
+
+  useEffect(() => {
+    if (!username || !topic) {
+      navigate('/');
+    }
+  }, [username, topic, navigate]);
 
   useEffect(() => {
     socket.connect();
@@ -78,13 +89,16 @@ export default function Chat() {
       setWaiting(true)
     })
 
-    socket.on('room joined', ({ roomId, topic, users, created_at }) => {
+    socket.on('room joined', ({ roomId, topic, users, created_at, ideAccess, ideValue, requester }) => {
       const time = new Date(created_at).toLocaleString()
       setRoom({
         roomId,
         topic,
         users,
-        created_at: time
+        created_at: time,
+        ideAccess,
+        ideValue,
+        requester
       })
       setWaiting(false);
     })
@@ -99,6 +113,10 @@ export default function Chat() {
 
     socket.on('message', handleMessage)
 
+    socket.on('write ide', (code: string) => {
+      setCode(code);
+    })
+
     return () => {
       socket.off("message", handleMessage);
       socket.off('waiting')
@@ -107,6 +125,31 @@ export default function Chat() {
       socket.disconnect();
     };
   }, [])
+
+  useEffect(() => {
+    if (!currentUser || !room) return;
+    if (currentUser.id !== room.ideAccess) return;
+    if (code === lastSentRef.current) return;
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(() => {
+      socket.emit("write ide", code);
+      lastSentRef.current = code;
+    }, 800);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [code, currentUser?.id, room?.ideAccess]);
+
+
+  const handleCodeChange = (code: string) => {
+    if (currentUser?.id !== room?.ideAccess) return;
+    setCode(code);
+  };
 
   const sendMessageHandler = (e: any) => {
     e.preventDefault();
@@ -127,19 +170,26 @@ export default function Chat() {
   }
 
   const handleDownload = async () => {
-    useDownload({messages, username, room})
+    useDownload({ messages, username, room })
   }
 
   if (waiting) {
     return <LoadingPage />
   }
 
-  const otherUser = room?.users?.find((u: any) => u.name !== username)?.name || "Anonymous";
-
   return (
     <div>
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-3xl text-slate-200 bg-darkbg h-162.5 border-black flex flex-col shadow-lg shadow-button rounded-2xl">
+      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center gap-6 p-4">
+        <Editor
+          className="order-2 md:order-1 w-full md:max-w-1/4 h-full rounded-xl"
+          code={code}
+          handleCodeChange={handleCodeChange}
+          ideAccess={room?.ideAccess}
+          userId={currentUser?.id}
+          requester={room?.requester}
+        />
+
+        <Card className="relative order-1 md:order-2 w-full max-w-3xl text-slate-200 bg-darkbg h-162.5 border-black flex flex-col shadow-lg shadow-button rounded-2xl">
 
           {/* Header */}
           <div className=" px-6">
@@ -148,13 +198,12 @@ export default function Chat() {
               <h2 className="text-base font-semibold text-white">
                 {topic} Discussion with{" "}
                 <span className="font-bold underline underline-offset-4">
-                  {otherUser}
+                  {otherUser?.name}
                 </span>
               </h2>
 
               {/* Actions */}
               <div className="flex items-center gap-4">
-
                 <button
                   onClick={handleDownload}
                   className="p-2 rounded-full bg-white hover:cursor-pointer hover:bg-green-50 transition"
@@ -186,7 +235,7 @@ export default function Chat() {
                         <span className="font-medium">Room ID:</span> {room?.roomId}
                       </p>
                       <p>
-                        <span className="font-medium">Users:</span> {username}, {otherUser}
+                        <span className="font-medium">Users:</span> {currentUser?.name}, {otherUser?.name}
                       </p>
                       <p>
                         <span className="font-medium">Created:</span>{" "}
@@ -205,7 +254,7 @@ export default function Chat() {
           <CardContent className="flex-1 bg-[url('/chat_bg.jpg')] bg-cover bg-center h-screen bg-orange-100 font-inter overflow-y-auto p-6 space-y-3">
             {
               messages.length > 0 && messages.map((msg, i) => {
-                const isMe = msg.user === username;
+                const isMe = msg.user === currentUser?.name;
 
                 return (
                   <div

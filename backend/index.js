@@ -31,8 +31,8 @@ const queueByTopic = { //topic
   PROJECT: new Set()
 };
 
-const rooms = new Map(); //room->roomdata
-const socketToRoom = new Map(); //socket->room
+const rooms = new Map(); //roomid->roomdata
+const socketToRoom = new Map(); //socket->roomid
 
 function addToRoom(socket1, socket2, topic) {
   // Define Room
@@ -45,7 +45,10 @@ function addToRoom(socket1, socket2, topic) {
       { id: socket2.id, name: socket2.data.username },
     ],
     created_at: Date.now(),
-    messages: []
+    messages: [],
+    ideAccess: socket1.id,
+    requester: null,
+    ideValue: ""
   }
 
   rooms.set(roomId, room);  // Map roomId to room
@@ -61,7 +64,10 @@ function addToRoom(socket1, socket2, topic) {
     roomId,
     topic,
     users: room.users,
-    created_at: room.created_at
+    created_at: room.created_at,
+    ideAccess: room.ideAccess,
+    requester: room.requester,
+    ideValue: room.ideValue
   })
 }
 
@@ -134,6 +140,36 @@ io.on("connection", (socket) => {
     room.messages.push(newMsg)  // add the message to the room object's message array
 
     io.to(roomId).emit('message', newMsg)     // send data to the receiver
+  })
+
+  // ide
+  socket.on('request ide', () => {
+    const roomId = socketToRoom.get(socket.id)
+    const room = rooms.get(roomId)
+    if (!room) return;
+    const { users, ideAccess } = room;
+    if (users.length < 2 || socket.id === ideAccess || room.requester == socket.id) return;
+    room.requester = socket.id;
+    const otherUser = users[0].id == socket.id ? users[1] : users[0]
+    io.to(roomId).to(otherUser.id).emit('receive request', otherUser.name)
+  })
+  socket.on('grant ide', () => {
+    const roomId = socketToRoom.get(socket.id)
+    const room = rooms.get(roomId)
+    if(!room) return;
+    const { users, requester, ideAccess } = room
+    if (users.length < 2 || ideAccess !== socket.id || !requester) return;
+    room.requester = null;
+    room.ideAccess = requester;
+  })
+  socket.on('write ide', (msg) => {
+    const roomId = socketToRoom.get(socket.id)
+    const room = rooms.get(roomId)
+    if (!room) return;
+    const { ideAccess} = room;
+    if(socket.id !== ideAccess) return
+    room.ideValue = msg;
+    io.to(roomId).emit('write ide', msg)
   })
 
   // Disconnect
