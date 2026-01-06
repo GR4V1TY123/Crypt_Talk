@@ -16,8 +16,6 @@ import LoadingPage from './LoadingPage';
 import { useCookies } from 'react-cookie';
 import useDownload from '@/hooks/useDownload';
 import Editor from '@/components/Editor';
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
 
 interface Message {
   id?: string;
@@ -39,7 +37,8 @@ type Room = {
   created_at?: string;
   ideAccess?: string;
   ideValue?: string;
-  requester?: string | null
+  requester?: string | null,
+  problem?: object
 };
 
 
@@ -59,7 +58,8 @@ export default function Chat() {
     roomId: "",
     topic: "",
     users: [],
-    created_at: undefined
+    created_at: undefined,
+    problem: undefined
   }
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("")
@@ -89,7 +89,7 @@ export default function Chat() {
       setWaiting(true)
     })
 
-    socket.on('room joined', ({ roomId, topic, users, created_at, ideAccess, ideValue, requester }) => {
+    socket.on('room joined', ({ roomId, topic, users, created_at, ideAccess, ideValue, requester, problem }) => {
       const time = new Date(created_at).toLocaleString()
       setRoom({
         roomId,
@@ -98,7 +98,8 @@ export default function Chat() {
         created_at: time,
         ideAccess,
         ideValue,
-        requester
+        requester,
+        problem
       })
       setWaiting(false);
     })
@@ -187,6 +188,7 @@ export default function Chat() {
           ideAccess={room?.ideAccess}
           userId={currentUser?.id}
           requester={room?.requester}
+          problem={room?.problem}
         />
 
         <Card className="relative order-1 md:order-2 w-full max-w-3xl text-slate-200 bg-darkbg h-162.5 border-black flex flex-col shadow-lg shadow-button rounded-2xl">

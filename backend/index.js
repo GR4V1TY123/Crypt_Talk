@@ -4,11 +4,12 @@ import { Server } from "socket.io";
 import cors from "cors"
 import { v4 as uuidv4 } from 'uuid';
 import puppeteer from "puppeteer";
-import { html } from "./report_format.js";
+import { html } from "./static/report_format.js";
+import { problems } from "./static/merged_problems.js";
 
 const app = express();
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: "*",
   credentials: true,
 }))
 app.use(express.json())
@@ -48,7 +49,7 @@ function addToRoom(socket1, socket2, topic) {
     messages: [],
     ideAccess: socket1.id,
     requester: null,
-    ideValue: ""
+    ideValue: "",
   }
 
   rooms.set(roomId, room);  // Map roomId to room
@@ -59,6 +60,10 @@ function addToRoom(socket1, socket2, topic) {
   socket1.join(roomId);
   socket2.join(roomId);
 
+  const allProblems = problems
+  const rand = Math.ceil(Math.random() * allProblems.questions.length)
+  const problem = allProblems.questions[rand]
+
   // broadcast to only this room
   io.to(roomId).emit('room joined', {
     roomId,
@@ -67,7 +72,8 @@ function addToRoom(socket1, socket2, topic) {
     created_at: room.created_at,
     ideAccess: room.ideAccess,
     requester: room.requester,
-    ideValue: room.ideValue
+    ideValue: room.ideValue,
+    problem
   })
 }
 
