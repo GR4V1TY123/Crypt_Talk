@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import { useCookies } from 'react-cookie';
-import { CloudBackupIcon, CloudSync, DownloadCloud, HatGlasses, ListCheck } from "lucide-react";
+import { CloudSync, DownloadCloud, HatGlasses } from "lucide-react";
 
 
 export default function Home() {
@@ -221,7 +221,7 @@ export default function Home() {
           {/* Features */}
           <div className="space-y-4">
             <div className="flex items-start gap-3 p-5 bg-white border-2 border-black rounded-lg">
-              <div className="h-12 w-12 rounded-lg border-2 border-black bg-white flex items-center justify-center flex-shrink-0">
+              <div className="h-12 w-12 rounded-lg border-2 border-black bg-white flex items-center justify-center shrink-0">
                 <span className="text-2xl"><HatGlasses/></span>
               </div>
               <div>
@@ -231,7 +231,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-start gap-3 p-5 bg-white border-2 border-black rounded-lg">
-              <div className="h-12 w-12 rounded-lg border-2 border-black bg-white flex items-center justify-center flex-shrink-0">
+              <div className="h-12 w-12 rounded-lg border-2 border-black bg-white flex items-center justify-center shrink-0">
                 <span className="text-2xl"><CloudSync/></span>
               </div>
               <div>
@@ -241,7 +241,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-start gap-3 p-5 bg-white border-2 border-black rounded-lg">
-              <div className="h-12 w-12 rounded-lg border-2 border-black bg-white flex items-center justify-center flex-shrink-0">
+              <div className="h-12 w-12 rounded-lg border-2 border-black bg-white flex items-center justify-center shrink-0">
                 <span className="text-2xl"><DownloadCloud/></span>
               </div>
               <div>

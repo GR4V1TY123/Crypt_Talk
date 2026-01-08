@@ -49,7 +49,7 @@ export default function Chat() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate()
 
-  const [cookies, setCookie] = useCookies(["username", "topic"]);
+  const [cookies, _setCookie] = useCookies(["username", "topic"]);
 
   const username = cookies.username;
   const topic = cookies.topic;
