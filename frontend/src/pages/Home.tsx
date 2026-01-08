@@ -48,7 +48,7 @@ export default function Home() {
     }
     const fetchStats = async () => {
       try {
-        const response = await fetch(`http://crypt-talk.up.railway.app/api/stats`);
+        const response = await fetch(`https://crypt-talk.up.railway.app/api/stats`);
         const data = await response.json();
         if (response.ok) setStats(data)
         console.log(data);
