@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { socket } from '@/socket';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ export default function Chat() {
   const [waiting, setWaiting] = useState(true);
   const [room, setRoom] = useState<Room | null>(defaultRoom);
   const [endMsg, setEndMsg] = useState("")
-  const [code, setCode] = useState<string>("// write code here")
+  const [code, setCode] = useState(`#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    cout << "Hello C++" << endl;\n    return 0;\n}`)
 
   const otherUser: RoomUser = room?.users?.find((u: RoomUser) => u?.name !== username);
   const currentUser: RoomUser = room?.users?.find((u: RoomUser) => u?.name === username);
@@ -118,11 +118,21 @@ export default function Chat() {
       setCode(code);
     })
 
+    socket.on('receive request', (requester) => {
+      setRoom((p: any) => ({ ...p, requester }))
+    })
+
+    socket.on('grant ide', (requester, ideAccess) => {
+      setRoom((p: any) => ({ ...p, requester, ideAccess }))
+    })
+
     return () => {
       socket.off("message", handleMessage);
       socket.off('waiting')
       socket.off('room joined')
       socket.off('room ended')
+      socket.off('receive request')
+      socket.off('grant ide')
       socket.disconnect();
     };
   }, [])
@@ -151,6 +161,17 @@ export default function Chat() {
     if (currentUser?.id !== room?.ideAccess) return;
     setCode(code);
   };
+
+  const handleRequestAccess = () => {
+    if (socket.id === room?.ideAccess || room?.requester === currentUser?.name) return
+    console.log(room?.requester);
+    socket.emit('request ide')
+  }
+
+  const handleGrantAccess = () => {
+    if (socket.id !== room?.ideAccess || !room?.requester) return
+    socket.emit('grant ide')
+  }
 
   const sendMessageHandler = (e: any) => {
     e.preventDefault();
@@ -181,15 +202,20 @@ export default function Chat() {
   return (
     <div>
       <div className="min-h-screen flex flex-col md:flex-row items-center justify-center gap-6 p-4">
-        <Editor
-          className="order-2 md:order-1 w-full md:max-w-1/4 h-full rounded-xl"
-          code={code}
-          handleCodeChange={handleCodeChange}
-          ideAccess={room?.ideAccess}
-          userId={currentUser?.id}
-          requester={room?.requester}
-          problem={room?.problem}
-        />
+        {
+          topic === "DSA" && <Editor
+            className="order-2 md:order-1 w-full md:max-w-1/4 h-full rounded-xl"
+            code={code}
+            handleCodeChange={handleCodeChange}
+            handleRequestAccess={handleRequestAccess}
+            ideAccess={room?.ideAccess}
+            userId={currentUser?.id}
+            userName={currentUser?.name}
+            requester={room?.requester}
+            problem={room?.problem}
+            handleGrantAccess={handleGrantAccess}
+          />
+        }
 
         <Card className="relative order-1 md:order-2 w-full max-w-3xl text-slate-200 bg-darkbg h-162.5 border-black flex flex-col shadow-lg shadow-button rounded-2xl">
 

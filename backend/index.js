@@ -156,8 +156,7 @@ io.on("connection", (socket) => {
     const { users, ideAccess } = room;
     if (users.length < 2 || socket.id === ideAccess || room.requester == socket.id) return;
     room.requester = socket.id;
-    const otherUser = users[0].id == socket.id ? users[1] : users[0]
-    io.to(roomId).to(otherUser.id).emit('receive request', otherUser.name)
+    io.to(roomId).emit('receive request', socket.data.username)
   })
   socket.on('grant ide', () => {
     const roomId = socketToRoom.get(socket.id)
@@ -167,6 +166,7 @@ io.on("connection", (socket) => {
     if (users.length < 2 || ideAccess !== socket.id || !requester) return;
     room.requester = null;
     room.ideAccess = requester;
+    io.to(roomId).emit('grant ide', room.requester, room.ideAccess)
   })
   socket.on('write ide', (msg) => {
     const roomId = socketToRoom.get(socket.id)

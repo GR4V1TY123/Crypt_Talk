@@ -1,19 +1,22 @@
-import { useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
-import { javascript } from "@codemirror/lang-javascript";
 import ProblemDialog from "@/components/ProblemDialog";
+import { cpp } from '@codemirror/lang-cpp'
+import { dracula } from '@uiw/codemirror-theme-dracula'
 
 type EditorProps = {
   className?: string;
   code?: string;
   handleCodeChange: (val: string) => void
   ideAccess?: string
-  userId?: any
-  requester?: string | null,
+  userId?: string
+  userName?: string
+  requester?: string | null
   problem?: object
+  handleRequestAccess: () => void
+  handleGrantAccess: () => void
 };
 
-export default function Editor({ className, code, handleCodeChange, ideAccess, userId, requester, problem }: EditorProps) {
+export default function Editor({ className, code, handleCodeChange, handleGrantAccess, ideAccess, userId, handleRequestAccess, requester, problem }: EditorProps) {
 
   const canEdit = ideAccess === userId ? true : false
 
@@ -34,24 +37,29 @@ export default function Editor({ className, code, handleCodeChange, ideAccess, u
       </div>
 
       {/* Header */}
-      <div className="px-4 py-2 text-sm font-medium text-slate-300 border-b flex items-center justify-between">
+      <div className="px-2 py-2 text-sm font-medium text-slate-300 border-b flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span>Code Editor</span>
+          <span>Editor</span>
         </div>
 
         <div className="flex items-center gap-3">
+          {canEdit && requester && (
+            <button
+              onClick={handleGrantAccess}
+              className="text-xs px-3 py-1 rounded-lg bg-blue-800 text-blue-100 border border-blue-700 hover:bg-blue-700 transition-colors"
+            >
+              Grant access to {requester}
+            </button>
+          )}
           {!canEdit && (
             <button
-              onClick={() => {
-                // emit socket / call API here
-              }}
+              onClick={handleRequestAccess}
               className="text-xs px-3 py-1 rounded-lg cursor-pointer bg-green-800 text-green-100 border border-green-700 hover:bg-green-700 active:bg-green-900 transition-colors"
             >
               Request access
             </button>
 
           )}
-
           <span className="text-xs opacity-80">
             {canEdit ? "You have access" : "No access"}
           </span>
@@ -64,8 +72,9 @@ export default function Editor({ className, code, handleCodeChange, ideAccess, u
           readOnly={!canEdit}
           value={code}
           height="400px"
-          extensions={[javascript({ jsx: true })]}
+          extensions={[cpp()]}
           onChange={(value) => handleCodeChange(value)}
+          theme={dracula}
         />
       </div>
     </div>
