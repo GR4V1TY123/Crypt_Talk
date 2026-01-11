@@ -4,7 +4,7 @@ export default async function useDownload({ messages, username, room }: any) {
     }
     console.log(requestBody);
 
-    const res = await fetch("http://localhost:3000/api/report", {
+    const res = await fetch("https://crypt-talk.up.railway.app/api/report", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

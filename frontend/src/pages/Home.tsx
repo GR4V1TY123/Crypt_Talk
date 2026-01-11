@@ -126,7 +126,7 @@ export default function Home() {
           <div className="space-y-8">
             <div className="space-y-4">
               <img
-                src="tech_chat.png"
+                src="Developer.gif"
                 alt="Normal chat image"
                 className="w-100 h-auto"
               />
